@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="pk-content">
+  <div class="pk-page-header">
+    <div>
+      <div class="pk-page-title">Dashboard</div>
+      <div class="pk-page-sub">Overview of your pharmacy's performance today.</div>
+    </div>
+    <div class="pk-page-actions">
+      <a href="{{ url_for('reports') }}" class="pk-btn pk-btn-outline">View Reports</a>
+      <a href="{{ url_for('sales') }}" class="pk-btn pk-btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        New Sale
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="pk-cards-grid">
+    <div class="pk-stat-card green">
+      <div class="pk-stat-label">Daily Sales</div>
+      <div class="pk-stat-value">₵{{ "%.2f"|format(stats.daily_sales) }}</div>
+      <div class="pk-stat-meta">{{ stats.daily_txns }} transactions</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+    </div>
+    <div class="pk-stat-card blue">
+      <div class="pk-stat-label">Monthly Revenue</div>
+      <div class="pk-stat-value">₵{{ "{:,.2f}".format(stats.monthly_revenue) }}</div>
+      <div class="pk-stat-meta">{{ stats.monthly_txns }} this month</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+    </div>
+    <div class="pk-stat-card white">
+      <div class="pk-stat-label">Net Profit</div>
+      <div class="pk-stat-value{% if stats.net_profit < 0 %} red-num{% endif %}">₵{{ "{:,.2f}".format(stats.net_profit) }}</div>
+      <div class="pk-stat-meta">Net earnings</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    </div>
+    <div class="pk-stat-card orange">
+      <div class="pk-stat-label">Stock Alerts</div>
+      <div class="pk-stat-value">{{ stats.stock_alerts }}</div>
+      <div class="pk-stat-meta">Requires attention</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></div>
+    </div>
+  </div>
+
+  <!-- Two columns -->
+  <div class="pk-two-col">
+    <!-- Recent Transactions -->
+    <div class="pk-panel">
+      <div class="pk-section-header">
+        <div>
+          <div class="pk-panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            Recent Transactions
+          </div>
+          <div class="pk-panel-sub" style="margin-top:3px">Latest sales activity from today</div>
+        </div>
+        <a href="{{ url_for('sales') }}" class="pk-view-all">
+          View All
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>
+        </a>
+      </div>
+      {% if recent %}
+      <div class="pk-table-wrap">
+        <table class="pk-table">
+          <thead><tr><th>Receipt</th><th>Customer</th><th>Items</th><th>Total</th><th>Payment</th></tr></thead>
+          <tbody>
+            {% for s in recent %}
+            <tr>
+              <td class="mono">{{ s.id }}</td>
+              <td>{{ s.customer }}</td>
+              <td class="secondary">{{ s['items']|length }} item{{ 's' if s['items']|length != 1 }}</td>
+              <td><strong>₵{{ "{:,.2f}".format(s.total) }}</strong></td>
+              <td><span class="pk-badge pk-badge-green">{{ s.payment }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="pk-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        <div class="pk-empty-title">No sales recorded today</div>
+        <div class="pk-empty-sub">Ready to process new customers</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Low Stock -->
+    <div class="pk-panel">
+      <div class="pk-section-header">
+        <div>
+          <div class="pk-panel-title" style="color:#d97706">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            Low Stock
+          </div>
+          <div class="pk-panel-sub" style="color:#d97706;opacity:.8;margin-top:3px">Restock needed soon</div>
+        </div>
+        <button class="pk-more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+      </div>
+      {% for item in low_stock %}
+      <div class="pk-low-stock-item">
+        <div>
+          <div class="pk-low-stock-name">{{ item.name }}</div>
+          <div class="pk-low-stock-meta">Min Level: {{ item.min }}</div>
+        </div>
+        <div class="pk-low-stock-right">
+          <div class="pk-zero-badge">{{ item.qty }} left</div>
+          <a href="{{ url_for('procurement') }}" class="pk-order-link">Order</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

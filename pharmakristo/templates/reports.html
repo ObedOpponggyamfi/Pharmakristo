@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="pk-content">
+  <div class="pk-page-header">
+    <div>
+      <div class="pk-page-title">Reports &amp; Analytics</div>
+      <div class="pk-page-sub">Comprehensive pharmacy insights and performance metrics</div>
+    </div>
+    <button class="pk-btn pk-btn-outline">↓ Export</button>
+  </div>
+
+  <div class="pk-alerts">
+    <div class="pk-alert-chip warn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      {{ stats.stock_alerts }} products low on stock
+    </div>
+    <div class="pk-alert-chip danger">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      {{ stats.expired }} products expired
+    </div>
+    <div class="pk-alert-chip expiry">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      {{ stats.expiring_soon }} products expiring soon
+    </div>
+  </div>
+
+  <div class="pk-financial-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div class="pk-panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          Financial Summary
+        </div>
+        <div class="pk-panel-sub" style="margin-top:3px">Sales, profit, and expenses breakdown</div>
+      </div>
+      <select class="pk-select">
+        <option>This Month</option><option>Today</option><option>This Week</option><option>This Year</option>
+      </select>
+    </div>
+
+    <div class="pk-cards-grid" style="margin-bottom:0">
+      <div class="pk-panel" style="background:#f0fdf4;border-color:#bbf7d0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#16a34a">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          Sales
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#16a34a">{{ stats.monthly_txns }}</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:4px">This Month</div>
+      </div>
+      <div class="pk-panel" style="background:#eff6ff;border-color:#bfdbfe">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#2563eb">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Revenue
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#2563eb">₵{{ "{:,.2f}".format(stats.monthly_revenue) }}</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:4px">This Month</div>
+      </div>
+      <div class="pk-panel" style="background:#fefce8;border-color:#fef08a">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#b45309">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          Expenses
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#b45309">₵{{ "{:,.2f}".format(stats.month_expenses) }}</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:4px">This Month</div>
+      </div>
+      <div class="pk-panel" style="background:#fff1f2;border-color:#fecdd3">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:#dc2626">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Net Profit
+        </div>
+        <div style="font-size:28px;font-weight:800;color:#dc2626">₵{{ "{:,.2f}".format(stats.net_profit) }}</div>
+        <div style="font-size:13px;color:#6b7280;margin-top:4px">This Month</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:14px">Quick Comparison</div>
+      <div class="pk-comparison-grid">
+        <div class="pk-comp-card"><div class="pk-comp-label">Daily</div><div class="pk-comp-value">₵{{ "{:,.2f}".format(stats.daily_sales) }}</div></div>
+        <div class="pk-comp-card"><div class="pk-comp-label">Weekly</div><div class="pk-comp-value">₵0.00</div></div>
+        <div class="pk-comp-card active"><div class="pk-comp-label">Monthly</div><div class="pk-comp-value red">₵{{ "{:,.2f}".format(stats.net_profit) }}</div></div>
+        <div class="pk-comp-card"><div class="pk-comp-label">Yearly</div><div class="pk-comp-value red">₵{{ "{:,.2f}".format(stats.yearly_net) }}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pk-cards-grid">
+    <div class="pk-stat-card green">
+      <div class="pk-stat-label">Daily Sales</div>
+      <div class="pk-stat-value">{{ stats.daily_txns }}</div>
+      <div class="pk-stat-meta">₵{{ "{:,.2f}".format(stats.daily_sales) }} revenue</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></div>
+    </div>
+    <div class="pk-stat-card blue">
+      <div class="pk-stat-label">Monthly Sales</div>
+      <div class="pk-stat-value">{{ stats.monthly_txns }}</div>
+      <div class="pk-stat-meta">₵{{ "{:,.2f}".format(stats.monthly_revenue) }} revenue</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></div>
+    </div>
+    <div class="pk-stat-card white">
+      <div class="pk-stat-label">Gross Profit</div>
+      <div class="pk-stat-value">₵{{ "{:,.2f}".format(stats.gross_profit) }}</div>
+      <div class="pk-stat-meta">This month</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    </div>
+    <div class="pk-stat-card orange">
+      <div class="pk-stat-label">Net Profit</div>
+      <div class="pk-stat-value">₵{{ "{:,.2f}".format(stats.net_profit) }}</div>
+      <div class="pk-stat-meta">After ₵{{ "{:,.2f}".format(stats.month_expenses) }} expenses</div>
+      <div class="pk-stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

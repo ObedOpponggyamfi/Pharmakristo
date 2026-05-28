@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Sales{% endblock %}
+{% block content %}
+<div class="pk-pos-layout">
+  <!-- Left -->
+  <div class="pk-pos-left">
+    <div class="pk-page-header" style="margin-bottom:18px">
+      <div>
+        <div class="pk-page-title">Point of Sale</div>
+        <div class="pk-page-sub">Process sales and manage transactions</div>
+      </div>
+    </div>
+    <form method="get" class="pk-input-search" style="margin-bottom:20px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input name="q" value="{{ request.args.get('q','') }}" placeholder="Search products by name, generic name, or batch..."/>
+    </form>
+    <div>
+      <div style="font-weight:700;font-size:16px;margin-bottom:4px">Quick Select</div>
+      <div style="color:#6b7280;font-size:13px;margin-bottom:14px">Click to add to cart</div>
+      <div class="pk-quick-grid">
+        {% for p in products %}
+        <div class="pk-quick-card{% if p.get('low') %} low{% endif %}" onclick="addToCart({{ p.id }},'{{ p.name }}','{{ p.generic }}',{{ p.sell }})">
+          <div class="pk-quick-name">{{ p.name }}</div>
+          <div class="pk-quick-generic">{{ p.generic }}</div>
+          <div class="pk-quick-bottom">
+            <div class="pk-quick-price">₵{{ "%.2f"|format(p.sell) }}</div>
+            <div class="pk-quick-qty{% if p.get('low') %} low{% endif %}">
+              {% if p.get('low') %}⚠ {% endif %}{{ p.qty }} left
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right — cart -->
+  <div class="pk-pos-right">
+    <div class="pk-cart-header">
+      <div class="pk-cart-title">🛒 Current Sale</div>
+      <div style="margin-top:10px">
+        <input class="pk-input" id="customer-name" placeholder="Customer name (optional)" style="font-size:13px"/>
+      </div>
+    </div>
+    <div class="pk-cart-body" id="cart-body">
+      <div class="pk-cart-empty" id="cart-empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        <div style="font-size:14px;font-weight:600;color:#6b7280">No items in cart</div>
+        <div style="font-size:12.5px">Search for products to add</div>
+      </div>
+      <div id="cart-items"></div>
+    </div>
+    <div class="pk-cart-footer">
+      <div class="pk-cart-totals">
+        <div class="pk-total-row"><span>Subtotal</span><span id="subtotal">₵0.00</span></div>
+        <div class="pk-total-row grand"><span>Total</span><span id="grand-total" style="color:#16a34a">₵0.00</span></div>
+      </div>
+      <div class="pk-payment-label">Payment Method</div>
+      <div class="pk-payment-grid">
+        {% for pid, label in [('cash','Cash'),('momo','Mobile Money'),('card','Card'),('credit','Credit')] %}
+        <button type="button" class="pk-payment-opt{% if pid == 'cash' %} selected{% endif %}"
+                onclick="selectPayment(this,'{{ pid }}')">{{ label }}</button>
+        {% endfor %}
+      </div>
+      <button class="pk-process-btn" id="process-btn" onclick="processSale()" disabled>
+        Add items to process sale
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let cart = [];
+let payment = 'cash';
+
+function addToCart(id, name, generic, price) {
+  const existing = cart.find(i => i.id === id);
+  if (existing) { existing.qty++; }
+  else { cart.push({ id, name, generic, price, qty: 1 }); }
+  renderCart();
+}
+
+function updateQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (item) { item.qty += delta; if (item.qty <= 0) cart = cart.filter(i => i.id !== id); }
+  renderCart();
+}
+
+function selectPayment(btn, pid) {
+  document.querySelectorAll('.pk-payment-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  payment = pid;
+}
+
+function renderCart() {
+  const empty = document.getElementById('cart-empty');
+  const items = document.getElementById('cart-items');
+  const btn   = document.getElementById('process-btn');
+  const sub   = document.getElementById('subtotal');
+  const grand = document.getElementById('grand-total');
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+  empty.style.display = cart.length ? 'none' : 'flex';
+  items.innerHTML = cart.map(i => `
+    <div class="pk-cart-item">
+      <div class="pk-cart-item-name">${i.name}<div style="font-size:12px;color:#9ca3af">${i.generic}</div></div>
+      <div class="pk-cart-item-qty">
+        <button class="pk-qty-btn" onclick="updateQty(${i.id},-1)">−</button>
+        <span style="font-size:14px;font-weight:600;min-width:20px;text-align:center">${i.qty}</span>
+        <button class="pk-qty-btn" onclick="updateQty(${i.id},1)">+</button>
+      </div>
+      <div class="pk-cart-item-price">₵${(i.price*i.qty).toFixed(2)}</div>
+    </div>`).join('');
+
+  const fmt = n => '₵' + n.toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+  sub.textContent = fmt(total);
+  grand.textContent = fmt(total);
+  btn.disabled = cart.length === 0;
+  btn.textContent = cart.length ? `Process Sale — ${fmt(total)}` : 'Add items to process sale';
+}
+
+async function processSale() {
+  if (!cart.length) return;
+  const customer = document.getElementById('customer-name').value || 'Walk-in';
+  const res = await fetch('/sales/process', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ items: cart, customer, payment }),
+  });
+  const data = await res.json();
+  alert(`Sale complete!\nReceipt: ${data.receipt_id}\nTotal: ₵${data.total.toFixed(2)}`);
+  cart = [];
+  renderCart();
+}
+</script>
+{% endblock %}
