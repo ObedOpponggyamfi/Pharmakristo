@@ -1,9 +1,41 @@
 // pk-reports.jsx — PharmaKristo Reports page
 
 function Reports() {
-  const { stats } = window.PKData;
+  const { dateRange, setDateRange } = useAppContext();
+  const fallback = window.PKData;
+  const [stats, setStats] = React.useState(fallback.stats);
   const [period, setPeriod]   = React.useState("This Month");
   const [compTab, setCompTab] = React.useState("monthly");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const range = mapDateRangeToApi(dateRange);
+
+    fetch(`/api/dashboard/summary?range=${range}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((data) => {
+        if (cancelled) return;
+        setStats({
+          ...fallback.stats,
+          dailySales: data.revenue,
+          dailyTxns: data.transactions,
+          monthlyRevenue: data.revenue,
+          netProfit: data.net_profit,
+          monthExpenses: data.expenses,
+          lowStock: data.low_stock,
+          expiringSoon: data.expiring_soon,
+          stockAlerts: data.stock_alerts,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setStats(fallback.stats);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dateRange]);
+
   const fmt = (n) => n.toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const fmt2 = (n) => (n < 0 ? "-₵" : "₵") + Math.abs(n).toLocaleString("en-GH", { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -21,9 +53,16 @@ function Reports() {
           <div className="pk-page-title">Reports &amp; Analytics</div>
           <div className="pk-page-sub">Comprehensive pharmacy insights and performance metrics</div>
         </div>
-        <button className="pk-btn pk-btn-outline">
-          <Icon name="download" size={15}/> Export
-        </button>
+        <div className="pk-page-actions">
+          <select className="pk-select" value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+            <option value="7days">Last 7 days</option>
+            <option value="30days">Last 30 days</option>
+            <option value="all">All time</option>
+          </select>
+          <button className="pk-btn pk-btn-outline">
+            <Icon name="download" size={15}/> Export
+          </button>
+        </div>
       </div>
 
       {/* Alert chips */}

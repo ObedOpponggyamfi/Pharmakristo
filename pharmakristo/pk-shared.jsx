@@ -60,8 +60,8 @@ function PharmaLogo({ size = 36 }) {
 }
 
 // ─── Sidebar ───────────────────────────────────────────────────────────
-function Sidebar({ page, onNav }) {
-  const D = window.PKData;
+function Sidebar({ page, onNav, onLogout }) {
+  const { user, userRole } = useAppContext();
   const nav = [
     { id:"dashboard",    label:"Dashboard",   icon:"layout-dashboard" },
     { id:"products",     label:"Products",    icon:"package" },
@@ -71,10 +71,12 @@ function Sidebar({ page, onNav }) {
     { id:"receipts",     label:"Receipts",    icon:"receipt" },
     { id:"reports",      label:"Reports",     icon:"bar-chart" },
   ];
-  const mgmt = [
-    { id:"staff",        label:"Staff",       icon:"users" },
-    { id:"settings",     label:"Settings",    icon:"settings" },
-  ];
+  const mgmt = userRole === "admin"
+    ? [
+        { id:"staff",        label:"Staff",       icon:"users" },
+        { id:"settings",     label:"Settings",    icon:"settings" },
+      ]
+    : [];
   return (
     <aside className="pk-sidebar">
       <div className="pk-sidebar-brand">
@@ -101,12 +103,12 @@ function Sidebar({ page, onNav }) {
         ))}
       </nav>
       <div className="pk-sidebar-user">
-        <div className="pk-user-avatar">{D.pharmacy.user.name[0]}</div>
+        <div className="pk-user-avatar">{(user || "?")[0].toUpperCase()}</div>
         <div>
-          <div className="pk-user-name">{D.pharmacy.user.name}</div>
-          <div className="pk-user-role">{D.pharmacy.user.email}</div>
+          <div className="pk-user-name">{user || "User"}</div>
+          <div className="pk-user-role">{userRole || "staff"}</div>
         </div>
-        <button className="pk-logout" title="Log out"><Icon name="log-out" size={16}/></button>
+        <button className="pk-logout" title="Log out" onClick={onLogout}><Icon name="log-out" size={16}/></button>
       </div>
     </aside>
   );

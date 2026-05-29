@@ -1,5 +1,144 @@
 {% extends "base.html" %}
 {% block title %}Products{% endblock %}
+
+{% block head %}
+<style>
+/* ── Modal overlay ─────────────────────────────────────────────── */
+.pk-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s;
+}
+.pk-modal-overlay.open {
+  opacity: 1; pointer-events: auto;
+}
+
+/* ── Modal box ─────────────────────────────────────────────────── */
+.pk-modal {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0,0,0,.18);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 28px 28px 24px;
+  transform: translateY(12px);
+  transition: transform .18s;
+}
+.pk-modal-overlay.open .pk-modal {
+  transform: translateY(0);
+}
+
+/* small confirm modal */
+.pk-modal.pk-modal-sm {
+  max-width: 380px;
+  padding: 28px 28px 22px;
+}
+
+.pk-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px;
+}
+.pk-modal-title {
+  font-size: 17px; font-weight: 700; color: var(--pk-gray-900);
+}
+.pk-modal-close {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--pk-gray-400); padding: 4px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s;
+}
+.pk-modal-close:hover { background: var(--pk-gray-100); color: var(--pk-gray-700); }
+
+/* ── Form grid ─────────────────────────────────────────────────── */
+.pk-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 18px;
+}
+.pk-form-grid .pk-form-full {
+  grid-column: 1 / -1;
+}
+.pk-form-label {
+  display: block;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--pk-gray-600); margin-bottom: 5px;
+}
+.pk-form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--pk-gray-200);
+  border-radius: var(--radius-sm);
+  font: 13.5px 'Inter', sans-serif;
+  color: var(--pk-gray-700);
+  background: #fff;
+  outline: none;
+  transition: border-color .12s, box-shadow .12s;
+}
+.pk-form-input:focus {
+  border-color: var(--pk-green);
+  box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+}
+.pk-form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--pk-gray-200);
+  border-radius: var(--radius-sm);
+  font: 13.5px 'Inter', sans-serif;
+  color: var(--pk-gray-700);
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  appearance: auto;
+  transition: border-color .12s, box-shadow .12s;
+}
+.pk-form-select:focus {
+  border-color: var(--pk-green);
+  box-shadow: 0 0 0 3px rgba(22,163,74,.12);
+}
+
+/* ── Modal footer buttons ───────────────────────────────────────── */
+.pk-modal-footer {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-top: 22px; padding-top: 18px;
+  border-top: 1px solid var(--pk-gray-100);
+}
+
+/* ── Confirm modal text ─────────────────────────────────────────── */
+.pk-confirm-text {
+  font-size: 14px; color: var(--pk-gray-600); line-height: 1.6;
+  margin-bottom: 4px;
+}
+.pk-confirm-name {
+  font-weight: 700; color: var(--pk-gray-900);
+}
+
+/* ── Row action buttons ─────────────────────────────────────────── */
+.pk-row-actions {
+  display: flex; align-items: center; gap: 4px;
+}
+.pk-icon-btn {
+  background: transparent; border: none; cursor: pointer;
+  padding: 5px; border-radius: 5px;
+  color: var(--pk-gray-400);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s;
+}
+.pk-icon-btn:hover { background: var(--pk-gray-100); color: var(--pk-gray-700); }
+.pk-icon-btn.danger:hover { background: #fef2f2; color: var(--pk-red); }
+
+/* ── Delete button ──────────────────────────────────────────────── */
+.pk-btn-danger {
+  background: var(--pk-red); color: #fff;
+}
+.pk-btn-danger:hover { filter: brightness(.92); }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="pk-content">
   <div class="pk-page-header">
@@ -7,7 +146,7 @@
       <div class="pk-page-title">Products</div>
       <div class="pk-page-sub">Manage your product catalog and stock levels</div>
     </div>
-    <button class="pk-btn pk-btn-primary">+ Add Product</button>
+    <button class="pk-btn pk-btn-primary" onclick="openAdd()">+ Add Product</button>
   </div>
 
   <div class="pk-cards-grid">
@@ -98,7 +237,38 @@
             <td>₵{{ "%.2f"|format(p.cost) }}</td>
             <td><strong>₵{{ "%.2f"|format(p.sell) }}</strong></td>
             <td class="secondary">{{ p.supplier }}</td>
-            <td><button class="pk-more-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></button></td>
+            <td>
+              <div class="pk-row-actions">
+                <button class="pk-icon-btn" title="Edit product"
+                  onclick="openEdit(
+                    {{ p.id }},
+                    {{ p.name|tojson }},
+                    {{ p.generic|tojson }},
+                    {{ p.batch|tojson }},
+                    {{ p.qty }},
+                    {{ p.min_qty }},
+                    {{ p.expiry|tojson }},
+                    {{ p.cost }},
+                    {{ p.sell }},
+                    {{ p.supplier|tojson }},
+                    {{ p.status|tojson }}
+                  )">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="pk-icon-btn danger" title="Delete product"
+                  onclick="deleteProduct({{ p.id }}, {{ p.name|tojson }})">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
           </tr>
           {% endfor %}
         </tbody>
@@ -106,4 +276,259 @@
     </div>
   </div>
 </div>
+
+<!-- ── Add / Edit Modal ────────────────────────────────────────────── -->
+<div class="pk-modal-overlay" id="productModal" onclick="closeIfOverlay(event, 'productModal')">
+  <div class="pk-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="pk-modal-header">
+      <div class="pk-modal-title" id="modalTitle">Add Product</div>
+      <button class="pk-modal-close" onclick="closeModal('productModal')" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="productForm" onsubmit="saveProduct(event)">
+      <input type="hidden" id="productId"/>
+      <div class="pk-form-grid">
+
+        <div class="pk-form-full">
+          <label class="pk-form-label" for="fName">Product Name *</label>
+          <input id="fName" name="name" class="pk-form-input" required placeholder="e.g. Paracetamol 500mg (100s)"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fGeneric">Generic Name</label>
+          <input id="fGeneric" name="generic" class="pk-form-input" placeholder="e.g. Paracetamol"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fBatch">Batch Number</label>
+          <input id="fBatch" name="batch" class="pk-form-input" placeholder="e.g. PARA00001"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fQty">Quantity</label>
+          <input id="fQty" name="qty" type="number" min="0" class="pk-form-input" placeholder="0"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fMinQty">Min Quantity</label>
+          <input id="fMinQty" name="min_qty" type="number" min="0" class="pk-form-input" placeholder="0"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fExpiry">Expiry Date</label>
+          <input id="fExpiry" name="expiry" class="pk-form-input" placeholder="e.g. Jan 20, 2029"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fStatus">Status</label>
+          <select id="fStatus" name="status" class="pk-form-select">
+            <option value="in_stock">In Stock</option>
+            <option value="low_stock">Low Stock</option>
+            <option value="out_stock">Out of Stock</option>
+            <option value="expiring_soon">Expiring Soon</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fCost">Cost Price (₵)</label>
+          <input id="fCost" name="cost" type="number" min="0" step="0.01" class="pk-form-input" placeholder="0.00"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="fSell">Selling Price (₵)</label>
+          <input id="fSell" name="sell" type="number" min="0" step="0.01" class="pk-form-input" placeholder="0.00"/>
+        </div>
+
+        <div class="pk-form-full">
+          <label class="pk-form-label" for="fSupplier">Supplier</label>
+          <input id="fSupplier" name="supplier" class="pk-form-input" placeholder="e.g. Ayrton Drug Manufacturing"/>
+        </div>
+
+      </div>
+
+      <div class="pk-modal-footer">
+        <button type="button" class="pk-btn pk-btn-outline" onclick="closeModal('productModal')">Cancel</button>
+        <button type="submit" class="pk-btn pk-btn-primary" id="saveBtn">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ───────────────────────────────────────── -->
+<div class="pk-modal-overlay" id="deleteModal" onclick="closeIfOverlay(event, 'deleteModal')">
+  <div class="pk-modal pk-modal-sm" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <div class="pk-modal-header">
+      <div class="pk-modal-title" id="deleteTitle">Delete Product</div>
+      <button class="pk-modal-close" onclick="closeModal('deleteModal')" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <p class="pk-confirm-text">
+      Are you sure you want to delete <span class="pk-confirm-name" id="deleteProductName"></span>?
+      This action cannot be undone.
+    </p>
+    <input type="hidden" id="deleteProductId"/>
+
+    <div class="pk-modal-footer">
+      <button type="button" class="pk-btn pk-btn-outline" onclick="closeModal('deleteModal')">Cancel</button>
+      <button type="button" class="pk-btn pk-btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Modal helpers ──────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeIfOverlay(event, id) {
+  if (event.target === document.getElementById(id)) closeModal(id);
+}
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeModal('productModal');
+    closeModal('deleteModal');
+  }
+});
+
+// ── Add Product ────────────────────────────────────────────────────────────
+function openAdd() {
+  document.getElementById('modalTitle').textContent = 'Add Product';
+  document.getElementById('saveBtn').textContent = 'Save Product';
+  document.getElementById('productId').value = '';
+  document.getElementById('productForm').reset();
+  openModal('productModal');
+  document.getElementById('fName').focus();
+}
+
+// ── Edit Product ───────────────────────────────────────────────────────────
+function openEdit(id, name, generic, batch, qty, min_qty, expiry, cost, sell, supplier, status) {
+  document.getElementById('modalTitle').textContent = 'Edit Product';
+  document.getElementById('saveBtn').textContent = 'Update Product';
+  document.getElementById('productId').value = id;
+
+  document.getElementById('fName').value     = name     || '';
+  document.getElementById('fGeneric').value  = generic  || '';
+  document.getElementById('fBatch').value    = batch    || '';
+  document.getElementById('fQty').value      = qty      != null ? qty : '';
+  document.getElementById('fMinQty').value   = min_qty  != null ? min_qty : '';
+  document.getElementById('fExpiry').value   = expiry   || '';
+  document.getElementById('fCost').value     = cost     != null ? cost : '';
+  document.getElementById('fSell').value     = sell     != null ? sell : '';
+  document.getElementById('fSupplier').value = supplier || '';
+  document.getElementById('fStatus').value   = status   || 'in_stock';
+
+  openModal('productModal');
+  document.getElementById('fName').focus();
+}
+
+// ── Save (Add or Update) ───────────────────────────────────────────────────
+function saveProduct(event) {
+  event.preventDefault();
+
+  const pid  = document.getElementById('productId').value;
+  const btn  = document.getElementById('saveBtn');
+  const form = document.getElementById('productForm');
+
+  const payload = {
+    name:     form.name.value.trim(),
+    generic:  form.generic.value.trim(),
+    batch:    form.batch.value.trim(),
+    qty:      parseInt(form.qty.value)      || 0,
+    min_qty:  parseInt(form.min_qty.value)  || 0,
+    expiry:   form.expiry.value.trim(),
+    cost:     parseFloat(form.cost.value)   || 0,
+    sell:     parseFloat(form.sell.value)   || 0,
+    supplier: form.supplier.value.trim(),
+    status:   form.status.value,
+  };
+
+  if (!payload.name) {
+    alert('Product name is required.');
+    document.getElementById('fName').focus();
+    return;
+  }
+
+  const isEdit = pid !== '';
+  const url    = isEdit ? `/api/products/${pid}` : '/api/products';
+  const method = isEdit ? 'PUT' : 'POST';
+
+  btn.disabled = true;
+  btn.textContent = isEdit ? 'Updating...' : 'Saving...';
+
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(function(res) {
+    if (!res.ok) return res.json().then(function(d) { throw new Error(d.error || 'Request failed'); });
+    return res.json();
+  })
+  .then(function(data) {
+    if (data.ok || data.id) {
+      closeModal('productModal');
+      window.location.reload();
+    } else {
+      throw new Error('Unexpected response');
+    }
+  })
+  .catch(function(err) {
+    alert('Error: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = isEdit ? 'Update Product' : 'Save Product';
+  });
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+function deleteProduct(id, name) {
+  document.getElementById('deleteProductId').value = id;
+  document.getElementById('deleteProductName').textContent = name;
+  openModal('deleteModal');
+}
+
+function confirmDelete() {
+  const pid = document.getElementById('deleteProductId').value;
+  const btn = document.querySelector('#deleteModal .pk-btn-danger');
+
+  btn.disabled = true;
+  btn.textContent = 'Deleting...';
+
+  fetch('/api/products/' + pid, { method: 'DELETE' })
+  .then(function(res) {
+    if (!res.ok) return res.json().then(function(d) { throw new Error(d.error || 'Delete failed'); });
+    return res.json();
+  })
+  .then(function(data) {
+    if (data.ok) {
+      closeModal('deleteModal');
+      window.location.reload();
+    } else {
+      throw new Error('Unexpected response');
+    }
+  })
+  .catch(function(err) {
+    alert('Error: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Delete';
+  });
+}
+</script>
 {% endblock %}

@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% block title %}Procurement{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}"/>
+{% endblock %}
+
+{% block content %}
+<div class="pk-content">
+  <div class="pk-page-header">
+    <div>
+      <div class="pk-page-title">Procurement</div>
+      <div class="pk-page-sub">Manage purchase orders and suppliers</div>
+    </div>
+    <button class="pk-btn pk-btn-primary" onclick="openAddPO()">+ New Order</button>
+  </div>
+
+  <div class="pk-cards-grid">
+    <div class="pk-stat-card blue">
+      <div class="pk-stat-label">Total Orders</div>
+      <div class="pk-stat-value">{{ po_stats.total_orders }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+          <rect x="9" y="11" width="14" height="10" rx="1"/>
+          <circle cx="12" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        </svg>
+      </div>
+    </div>
+    <div class="pk-stat-card orange">
+      <div class="pk-stat-label">Pending</div>
+      <div class="pk-stat-value">{{ po_stats.pending }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+    </div>
+    <div class="pk-stat-card green">
+      <div class="pk-stat-label">Received This Month</div>
+      <div class="pk-stat-value">{{ po_stats.received_this_month }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+    </div>
+    <div class="pk-stat-card white">
+      <div class="pk-stat-label">Total Value</div>
+      <div class="pk-stat-value">₵{{ "{:,.2f}".format(po_stats.total_value) }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"/>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="pk-panel">
+    <div class="pk-section-header">
+      <div>
+        <div class="pk-panel-title">Purchase Orders</div>
+        <div class="pk-panel-sub">{{ purchase_orders|length }} orders on file</div>
+      </div>
+    </div>
+
+    <div class="pk-table-wrap">
+      <table class="pk-table">
+        <thead>
+          <tr>
+            <th>PO #</th>
+            <th>Supplier</th>
+            <th>Order Date</th>
+            <th>Expected</th>
+            <th>Status</th>
+            <th style="text-align:right">Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for po in purchase_orders %}
+          <tr>
+            <td><strong>{{ po.po_number }}</strong></td>
+            <td>{{ po.supplier }}</td>
+            <td class="secondary">{{ po.order_date }}</td>
+            <td class="secondary">{{ po.expected_date }}</td>
+            <td>
+              {% if po.status == 'pending' %}
+                <span class="pk-badge pk-badge-orange">Pending</span>
+              {% elif po.status == 'received' %}
+                <span class="pk-badge pk-badge-green">Received</span>
+              {% elif po.status == 'cancelled' %}
+                <span class="pk-badge pk-badge-red">Cancelled</span>
+              {% else %}
+                <span class="pk-badge pk-badge-blue">{{ po.status|title }}</span>
+              {% endif %}
+            </td>
+            <td style="text-align:right"><strong>₵{{ "{:,.2f}".format(po.total) }}</strong></td>
+            <td>
+              <div class="pk-row-actions">
+                <button class="pk-icon-btn" title="Edit"
+                  onclick="openEditPO(
+                    {{ po.id }},
+                    {{ po.po_number|tojson }},
+                    {{ po.supplier|tojson }},
+                    {{ po.order_date|tojson }},
+                    {{ po.expected_date|tojson }},
+                    {{ po.status|tojson }},
+                    {{ po.total }},
+                    {{ po.notes|tojson }}
+                  )">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="pk-icon-btn danger" title="Delete"
+                  onclick="deletePO({{ po.id }}, {{ po.po_number|tojson }})">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="text-align:center;color:var(--pk-gray-400);padding:36px">No purchase orders yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add / Edit PO Modal ────────────────────────────────────────────── -->
+<div class="pk-modal-overlay" id="poModal" onclick="closeIfOverlay(event, 'poModal')">
+  <div class="pk-modal" role="dialog" aria-modal="true" aria-labelledby="poModalTitle">
+    <div class="pk-modal-header">
+      <div class="pk-modal-title" id="poModalTitle">New Purchase Order</div>
+      <button class="pk-modal-close" onclick="closeModal('poModal')" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="poForm" onsubmit="savePO(event)">
+      <input type="hidden" id="poId"/>
+      <div class="pk-form-grid">
+
+        <div>
+          <label class="pk-form-label" for="poNumber">PO Number *</label>
+          <input id="poNumber" name="po_number" class="pk-form-input" required placeholder="e.g. PO-2026-006"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="poSupplier">Supplier *</label>
+          <select id="poSupplier" name="supplier" class="pk-form-select" required>
+            <option value="">Select a supplier…</option>
+            {% for s in suppliers %}
+            <option value="{{ s }}">{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="poOrderDate">Order Date</label>
+          <input id="poOrderDate" name="order_date" class="pk-form-input" placeholder="e.g. May 28, 2026"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="poExpectedDate">Expected Date</label>
+          <input id="poExpectedDate" name="expected_date" class="pk-form-input" placeholder="e.g. Jun 10, 2026"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="poStatus">Status</label>
+          <select id="poStatus" name="status" class="pk-form-select">
+            <option value="pending">Pending</option>
+            <option value="received">Received</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="poTotal">Total (₵)</label>
+          <input id="poTotal" name="total" type="number" min="0" step="0.01" class="pk-form-input" placeholder="0.00"/>
+        </div>
+
+        <div class="pk-form-full">
+          <label class="pk-form-label" for="poNotes">Notes</label>
+          <textarea id="poNotes" name="notes" class="pk-form-textarea" placeholder="Any details about this order..."></textarea>
+        </div>
+
+      </div>
+
+      <div class="pk-modal-footer">
+        <button type="button" class="pk-btn pk-btn-outline" onclick="closeModal('poModal')">Cancel</button>
+        <button type="submit" class="pk-btn pk-btn-primary" id="poSaveBtn">Save Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Delete Confirm ────────────────────────────────────────────────── -->
+<div class="pk-modal-overlay" id="poDeleteModal" onclick="closeIfOverlay(event, 'poDeleteModal')">
+  <div class="pk-modal pk-modal-sm" role="dialog" aria-modal="true">
+    <div class="pk-modal-header">
+      <div class="pk-modal-title">Delete Purchase Order</div>
+      <button class="pk-modal-close" onclick="closeModal('poDeleteModal')" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <p class="pk-confirm-text">
+      Are you sure you want to delete <span class="pk-confirm-name" id="poDeleteName"></span>?
+      This action cannot be undone.
+    </p>
+    <input type="hidden" id="poDeleteId"/>
+    <div class="pk-modal-footer">
+      <button type="button" class="pk-btn pk-btn-outline" onclick="closeModal('poDeleteModal')">Cancel</button>
+      <button type="button" class="pk-btn pk-btn-danger" onclick="confirmDeletePO()">Delete</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+function closeIfOverlay(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') { closeModal('poModal'); closeModal('poDeleteModal'); }
+});
+
+function openAddPO() {
+  document.getElementById('poModalTitle').textContent = 'New Purchase Order';
+  document.getElementById('poSaveBtn').textContent = 'Save Order';
+  document.getElementById('poId').value = '';
+  document.getElementById('poForm').reset();
+  openModal('poModal');
+  document.getElementById('poNumber').focus();
+}
+
+function openEditPO(id, po_number, supplier, order_date, expected_date, status, total, notes) {
+  document.getElementById('poModalTitle').textContent = 'Edit Purchase Order';
+  document.getElementById('poSaveBtn').textContent = 'Update Order';
+  document.getElementById('poId').value = id;
+  document.getElementById('poNumber').value = po_number || '';
+  document.getElementById('poSupplier').value = supplier || '';
+  document.getElementById('poOrderDate').value = order_date || '';
+  document.getElementById('poExpectedDate').value = expected_date || '';
+  document.getElementById('poStatus').value = status || 'pending';
+  document.getElementById('poTotal').value = total != null ? total : '';
+  document.getElementById('poNotes').value = notes || '';
+  openModal('poModal');
+}
+
+function savePO(event) {
+  event.preventDefault();
+  const poId = document.getElementById('poId').value;
+  const btn  = document.getElementById('poSaveBtn');
+  const form = document.getElementById('poForm');
+  const payload = {
+    po_number: form.po_number.value.trim(),
+    supplier:  form.supplier.value.trim(),
+    order_date: form.order_date.value.trim(),
+    expected_date: form.expected_date.value.trim(),
+    status: form.status.value,
+    total: parseFloat(form.total.value) || 0,
+    notes: form.notes.value.trim(),
+  };
+  if (!payload.po_number) { alert('PO number is required.'); return; }
+  if (!payload.supplier)  { alert('Supplier is required.'); return; }
+
+  const isEdit = poId !== '';
+  const url = isEdit ? '/api/purchase-orders/' + poId : '/api/purchase-orders';
+  const method = isEdit ? 'PUT' : 'POST';
+  btn.disabled = true; btn.textContent = isEdit ? 'Updating...' : 'Saving...';
+
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.ok ? r.json() : r.json().then(d => { throw new Error(d.error || 'Request failed'); }))
+  .then(d => {
+    if (d.ok || d.id) { closeModal('poModal'); window.location.reload(); }
+    else throw new Error('Unexpected response');
+  })
+  .catch(err => {
+    alert('Error: ' + err.message);
+    btn.disabled = false; btn.textContent = isEdit ? 'Update Order' : 'Save Order';
+  });
+}
+
+function deletePO(id, name) {
+  document.getElementById('poDeleteId').value = id;
+  document.getElementById('poDeleteName').textContent = name;
+  openModal('poDeleteModal');
+}
+
+function confirmDeletePO() {
+  const id = document.getElementById('poDeleteId').value;
+  const btn = document.querySelector('#poDeleteModal .pk-btn-danger');
+  btn.disabled = true; btn.textContent = 'Deleting...';
+  fetch('/api/purchase-orders/' + id, { method: 'DELETE' })
+    .then(r => r.ok ? r.json() : r.json().then(d => { throw new Error(d.error || 'Delete failed'); }))
+    .then(d => {
+      if (d.ok) { closeModal('poDeleteModal'); window.location.reload(); }
+      else throw new Error('Unexpected response');
+    })
+    .catch(err => {
+      alert('Error: ' + err.message);
+      btn.disabled = false; btn.textContent = 'Delete';
+    });
+}
+</script>
+{% endblock %}

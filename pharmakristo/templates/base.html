@@ -88,12 +88,14 @@
       {% endfor %}
     </nav>
     <div class="pk-sidebar-user">
-      <div class="pk-user-avatar">{{ pharmacy.user.name[0] }}</div>
+      {% set _u = current_user or pharmacy.user %}
+      {% set _role_labels = {'admin':'Admin','pharmacist':'Pharmacist','cashier':'Cashier','accounts':'Accounts','store_keeper':'Store Keeper'} %}
+      <div class="pk-user-avatar">{{ _u.name[0] }}</div>
       <div>
-        <div class="pk-user-name">{{ pharmacy.user.name }}</div>
-        <div class="pk-user-role">{{ pharmacy.user.email }}</div>
+        <div class="pk-user-name">{{ _u.name }}</div>
+        <div class="pk-user-role">{{ _role_labels.get(_u.role, _u.role|title) if _u.role else '' }}</div>
       </div>
-      <a href="#" class="pk-logout" title="Log out">
+      <a href="{{ url_for('logout') }}" class="pk-logout" title="Log out">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -131,7 +133,7 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="pk-bell-badge">87</span>
         </button>
-        <div class="pk-avatar">A</div>
+        <div class="pk-avatar">{{ (current_user.name[0] if current_user else pharmacy.user.name[0]) }}</div>
       </div>
     </header>
 
@@ -139,6 +141,335 @@
     {% block content %}{% endblock %}
   </div>
 </div>
+
+{% if current_user %}
+<!-- ─── Krista AI Chat Widget ─────────────────────────────────────────── -->
+<style>
+  .pk-chat-fab {
+    position: fixed;
+    bottom: 96px;
+    right: 28px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2D1B69, #3D2780);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(45,27,105,.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .pk-chat-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(45,27,105,.45); }
+  .pk-chat-fab svg { width: 26px; height: 26px; }
+
+  .pk-chat-panel {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 400px;
+    height: 560px;
+    max-height: calc(100vh - 56px);
+    background: #fff;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0,0,0,.22);
+    z-index: 12;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(16px);
+    opacity: 0;
+    transition: opacity .18s, transform .18s;
+  }
+  .pk-chat-panel.open {
+    display: flex;
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .pk-chat-header {
+    background: var(--pk-purple);
+    color: #fff;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pk-chat-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3D2780, var(--pk-green));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .pk-chat-title { font-size: 14.5px; font-weight: 700; }
+  .pk-chat-subtitle { font-size: 11.5px; color: rgba(255,255,255,.65); }
+  .pk-chat-close {
+    margin-left: auto;
+    background: transparent; border: none; color: rgba(255,255,255,.7);
+    cursor: pointer; padding: 4px;
+    border-radius: 4px;
+    display: flex;
+  }
+  .pk-chat-close:hover { color: #fff; background: rgba(255,255,255,.1); }
+
+  .pk-chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #f9fafb;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .pk-chat-msg {
+    max-width: 85%;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .pk-chat-msg.assistant {
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid var(--pk-gray-200);
+    color: var(--pk-gray-800, #1f2937);
+    border-bottom-left-radius: 4px;
+  }
+  .pk-chat-msg.user {
+    align-self: flex-end;
+    background: var(--pk-green);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .pk-chat-typing {
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid var(--pk-gray-200);
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 4px;
+  }
+  .pk-chat-typing span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--pk-gray-400);
+    animation: pk-bounce 1.2s infinite ease-in-out;
+  }
+  .pk-chat-typing span:nth-child(2) { animation-delay: .15s; }
+  .pk-chat-typing span:nth-child(3) { animation-delay: .3s; }
+  @keyframes pk-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: .5; }
+    30% { transform: translateY(-5px); opacity: 1; }
+  }
+
+  .pk-chat-chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 12px;
+    border-top: 1px solid var(--pk-gray-100);
+    background: #fff;
+  }
+  .pk-chat-chip {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--pk-gray-100);
+    color: var(--pk-gray-700);
+    border: none;
+    font: 500 12px 'Inter', sans-serif;
+    cursor: pointer;
+    transition: background .12s;
+    white-space: nowrap;
+  }
+  .pk-chat-chip:hover { background: var(--pk-green-light); color: var(--pk-green-dark); }
+
+  .pk-chat-input-bar {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--pk-gray-100);
+    background: #fff;
+  }
+  .pk-chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--pk-gray-200);
+    border-radius: 22px;
+    font: 13.5px 'Inter', sans-serif;
+    color: var(--pk-gray-800, #1f2937);
+    outline: none;
+    background: var(--pk-gray-50);
+  }
+  .pk-chat-input:focus { border-color: var(--pk-green); background: #fff; }
+  .pk-chat-send {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--pk-green);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .12s;
+  }
+  .pk-chat-send:hover { background: var(--pk-green-dark); }
+  .pk-chat-send:disabled { background: var(--pk-gray-300); cursor: not-allowed; }
+</style>
+
+<button class="pk-chat-fab" id="pkChatFab" aria-label="Open Krista AI assistant" title="Ask Krista">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</button>
+
+<div class="pk-chat-panel" id="pkChatPanel" role="dialog" aria-labelledby="pkChatTitle" aria-modal="false">
+  <div class="pk-chat-header">
+    <div class="pk-chat-avatar" aria-hidden="true">K</div>
+    <div>
+      <div class="pk-chat-title" id="pkChatTitle">Krista</div>
+      <div class="pk-chat-subtitle">Your AI pharmacy assistant</div>
+    </div>
+    <button class="pk-chat-close" id="pkChatClose" aria-label="Close chat">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="pk-chat-body" id="pkChatBody"></div>
+
+  <div class="pk-chat-chips" id="pkChatChips">
+    <button type="button" class="pk-chat-chip" data-prompt="Analyze my expenses">Analyze expenses</button>
+    <button type="button" class="pk-chat-chip" data-prompt="What's running low in stock?">What's running low?</button>
+    <button type="button" class="pk-chat-chip" data-prompt="How are sales this month?">Sales this month</button>
+    <button type="button" class="pk-chat-chip" data-prompt="What are my top products?">Top categories</button>
+  </div>
+
+  <form class="pk-chat-input-bar" id="pkChatForm" autocomplete="off">
+    <input id="pkChatInput" class="pk-chat-input" type="text" placeholder="Ask Krista anything…" aria-label="Message Krista"/>
+    <button type="submit" class="pk-chat-send" id="pkChatSend" aria-label="Send">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </form>
+</div>
+
+<script>
+(function(){
+  const fab    = document.getElementById('pkChatFab');
+  const panel  = document.getElementById('pkChatPanel');
+  const closeBtn = document.getElementById('pkChatClose');
+  const body   = document.getElementById('pkChatBody');
+  const form   = document.getElementById('pkChatForm');
+  const input  = document.getElementById('pkChatInput');
+  const send   = document.getElementById('pkChatSend');
+  const chips  = document.getElementById('pkChatChips');
+
+  const greeting = "Hi! I'm Krista. Ask me about your expenses, top products, low stock, or sales trends.";
+  let greeted = false;
+
+  function openChat(){
+    panel.classList.add('open');
+    fab.style.display = 'none';
+    if (!greeted) {
+      addMsg('assistant', greeting);
+      greeted = true;
+    }
+    setTimeout(()=>input.focus(), 100);
+  }
+  function closeChat(){
+    panel.classList.remove('open');
+    fab.style.display = 'flex';
+  }
+
+  fab.addEventListener('click', openChat);
+  closeBtn.addEventListener('click', closeChat);
+
+  function addMsg(role, text){
+    const div = document.createElement('div');
+    div.className = 'pk-chat-msg ' + role;
+    div.textContent = text;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    return div;
+  }
+
+  function addTyping(){
+    const t = document.createElement('div');
+    t.className = 'pk-chat-typing';
+    t.id = 'pkChatTyping';
+    t.innerHTML = '<span></span><span></span><span></span>';
+    body.appendChild(t);
+    body.scrollTop = body.scrollHeight;
+    return t;
+  }
+  function removeTyping(){
+    const t = document.getElementById('pkChatTyping');
+    if (t) t.remove();
+  }
+
+  function ask(message){
+    if (!message) return;
+    addMsg('user', message);
+    input.value = '';
+    send.disabled = true;
+    setTimeout(()=>{
+      const t = addTyping();
+      fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message })
+      })
+      .then(r => r.json())
+      .then(data => {
+        setTimeout(()=>{
+          removeTyping();
+          addMsg('assistant', data.response || 'Sorry, I had trouble understanding that.');
+          send.disabled = false;
+          input.focus();
+        }, 800);
+      })
+      .catch(err => {
+        removeTyping();
+        addMsg('assistant', "Sorry — I couldn't reach the server. Please try again.");
+        send.disabled = false;
+      });
+    }, 600);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    ask(input.value.trim());
+  });
+
+  chips.addEventListener('click', function(e){
+    const btn = e.target.closest('.pk-chat-chip');
+    if (!btn) return;
+    ask(btn.getAttribute('data-prompt'));
+  });
+
+  // Esc to close
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && panel.classList.contains('open')) closeChat();
+  });
+})();
+</script>
+{% endif %}
 
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block scripts %}{% endblock %}

@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}Staff{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}"/>
+{% endblock %}
+
+{% block content %}
+<div class="pk-content">
+  <div class="pk-page-header">
+    <div>
+      <div class="pk-page-title">Staff</div>
+      <div class="pk-page-sub">Manage pharmacy staff and roles</div>
+    </div>
+    <button class="pk-btn pk-btn-primary" onclick="openAddStaff()">+ Add Staff</button>
+  </div>
+
+  <div class="pk-cards-grid" style="grid-template-columns:repeat(3, 1fr)">
+    <div class="pk-stat-card blue">
+      <div class="pk-stat-label">Total Staff</div>
+      <div class="pk-stat-value">{{ staff_stats.total }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+    </div>
+    <div class="pk-stat-card green">
+      <div class="pk-stat-label">Active</div>
+      <div class="pk-stat-value">{{ staff_stats.active }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+    </div>
+    <div class="pk-stat-card orange">
+      <div class="pk-stat-label">On Leave</div>
+      <div class="pk-stat-value">{{ staff_stats.on_leave }}</div>
+      <div class="pk-stat-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="pk-panel">
+    <div class="pk-section-header">
+      <div>
+        <div class="pk-panel-title">Team Members</div>
+        <div class="pk-panel-sub">{{ users|length }} member{{ '' if users|length == 1 else 's' }}</div>
+      </div>
+    </div>
+
+    <div class="pk-table-wrap">
+      <table class="pk-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set role_labels = {'admin':'Admin','pharmacist':'Pharmacist','cashier':'Cashier','accounts':'Accounts Officer','store_keeper':'Store Keeper'} %}
+          {% for u in users %}
+          <tr>
+            <td><strong>{{ u.name }}</strong></td>
+            <td>{{ role_labels.get(u.role, u.role|title) }}</td>
+            <td class="secondary">{{ u.email }}</td>
+            <td class="secondary">{{ u.phone or '—' }}</td>
+            <td>
+              {% if u.status == 'active' %}
+                <span class="pk-badge pk-badge-green">Active</span>
+              {% elif u.status == 'on_leave' %}
+                <span class="pk-badge pk-badge-orange">On Leave</span>
+              {% else %}
+                <span class="pk-badge pk-badge-gray">{{ u.status|title }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="pk-row-actions">
+                <button class="pk-icon-btn" title="Edit"
+                  onclick="openEditStaff(
+                    {{ u.id }},
+                    {{ u.name|tojson }},
+                    {{ u.email|tojson }},
+                    {{ u.role|tojson }},
+                    {{ (u.phone or '')|tojson }},
+                    {{ u.status|tojson }}
+                  )">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="pk-icon-btn danger" title="Delete"
+                  onclick="deleteStaff({{ u.id }}, {{ u.name|tojson }})">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" style="text-align:center;color:var(--pk-gray-400);padding:36px">No staff on file yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add / Edit Staff Modal ────────────────────────────────────────── -->
+<div class="pk-modal-overlay" id="staffModal" onclick="closeIfOverlay(event, 'staffModal')">
+  <div class="pk-modal" role="dialog" aria-modal="true" aria-labelledby="staffModalTitle">
+    <div class="pk-modal-header">
+      <div class="pk-modal-title" id="staffModalTitle">Add Staff</div>
+      <button class="pk-modal-close" onclick="closeModal('staffModal')" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <form id="staffForm" onsubmit="saveStaff(event)">
+      <input type="hidden" id="staffId"/>
+      <div class="pk-form-grid">
+
+        <div>
+          <label class="pk-form-label" for="sName">Full Name *</label>
+          <input id="sName" name="name" class="pk-form-input" required placeholder="e.g. Kofi Ansah"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="sEmail">Email *</label>
+          <input id="sEmail" name="email" type="email" class="pk-form-input" required placeholder="kofi@pharmakristo.com"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="sRole">Role</label>
+          <select id="sRole" name="role" class="pk-form-select">
+            <option value="admin">Admin</option>
+            <option value="pharmacist">Pharmacist</option>
+            <option value="cashier">Cashier</option>
+            <option value="accounts">Accounts Officer</option>
+            <option value="store_keeper">Store Keeper</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="sPhone">Phone</label>
+          <input id="sPhone" name="phone" class="pk-form-input" placeholder="024-000-0000"/>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="sStatus">Status</label>
+          <select id="sStatus" name="status" class="pk-form-select">
+            <option value="active">Active</option>
+            <option value="on_leave">On Leave</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="pk-form-label" for="sPassword"><span id="sPasswordLabel">Password *</span></label>
+          <input id="sPassword" name="password" type="password" class="pk-form-input" placeholder="••••••••"
+                 autocomplete="new-password"/>
+          <div style="font-size:11.5px;color:var(--pk-gray-400);margin-top:4px" id="sPasswordHint">Required for new staff.</div>
+        </div>
+
+      </div>
+
+      <div class="pk-modal-footer">
+        <button type="button" class="pk-btn pk-btn-outline" onclick="closeModal('staffModal')">Cancel</button>
+        <button type="submit" class="pk-btn pk-btn-primary" id="staffSaveBtn">Save Staff</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Delete Confirm ────────────────────────────────────────────────── -->
+<div class="pk-modal-overlay" id="staffDeleteModal" onclick="closeIfOverlay(event, 'staffDeleteModal')">
+  <div class="pk-modal pk-modal-sm" role="dialog" aria-modal="true">
+    <div class="pk-modal-header">
+      <div class="pk-modal-title">Remove Staff</div>
+      <button class="pk-modal-close" onclick="closeModal('staffDeleteModal')" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <p class="pk-confirm-text">
+      Are you sure you want to remove <span class="pk-confirm-name" id="staffDeleteName"></span>?
+      This action cannot be undone.
+    </p>
+    <input type="hidden" id="staffDeleteId"/>
+    <div class="pk-modal-footer">
+      <button type="button" class="pk-btn pk-btn-outline" onclick="closeModal('staffDeleteModal')">Cancel</button>
+      <button type="button" class="pk-btn pk-btn-danger" onclick="confirmDeleteStaff()">Delete</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+function closeIfOverlay(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') { closeModal('staffModal'); closeModal('staffDeleteModal'); }
+});
+
+function openAddStaff() {
+  document.getElementById('staffModalTitle').textContent = 'Add Staff';
+  document.getElementById('staffSaveBtn').textContent = 'Save Staff';
+  document.getElementById('staffId').value = '';
+  document.getElementById('staffForm').reset();
+  document.getElementById('sPassword').required = true;
+  document.getElementById('sPasswordLabel').textContent = 'Password *';
+  document.getElementById('sPasswordHint').textContent = 'Required for new staff.';
+  openModal('staffModal');
+  document.getElementById('sName').focus();
+}
+
+function openEditStaff(id, name, email, role, phone, status) {
+  document.getElementById('staffModalTitle').textContent = 'Edit Staff';
+  document.getElementById('staffSaveBtn').textContent = 'Update Staff';
+  document.getElementById('staffId').value = id;
+  document.getElementById('sName').value = name || '';
+  document.getElementById('sEmail').value = email || '';
+  document.getElementById('sRole').value = role || 'cashier';
+  document.getElementById('sPhone').value = phone || '';
+  document.getElementById('sStatus').value = status || 'active';
+  document.getElementById('sPassword').value = '';
+  document.getElementById('sPassword').required = false;
+  document.getElementById('sPasswordLabel').textContent = 'Password';
+  document.getElementById('sPasswordHint').textContent = 'Leave blank to keep current password.';
+  openModal('staffModal');
+}
+
+function saveStaff(event) {
+  event.preventDefault();
+  const id = document.getElementById('staffId').value;
+  const btn = document.getElementById('staffSaveBtn');
+  const form = document.getElementById('staffForm');
+  const payload = {
+    name: form.name.value.trim(),
+    email: form.email.value.trim().toLowerCase(),
+    role: form.role.value,
+    phone: form.phone.value.trim(),
+    status: form.status.value,
+    password: form.password.value,
+  };
+  if (!payload.name)  { alert('Name is required.'); return; }
+  if (!payload.email) { alert('Email is required.'); return; }
+  const isEdit = id !== '';
+  if (!isEdit && !payload.password) { alert('Password is required for new staff.'); return; }
+
+  const url = isEdit ? '/api/staff/' + id : '/api/staff';
+  const method = isEdit ? 'PUT' : 'POST';
+  btn.disabled = true; btn.textContent = isEdit ? 'Updating...' : 'Saving...';
+
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.ok ? r.json() : r.json().then(d => { throw new Error(d.error || 'Request failed'); }))
+  .then(d => {
+    if (d.ok || d.id) { closeModal('staffModal'); window.location.reload(); }
+    else throw new Error('Unexpected response');
+  })
+  .catch(err => {
+    alert('Error: ' + err.message);
+    btn.disabled = false; btn.textContent = isEdit ? 'Update Staff' : 'Save Staff';
+  });
+}
+
+function deleteStaff(id, name) {
+  document.getElementById('staffDeleteId').value = id;
+  document.getElementById('staffDeleteName').textContent = name;
+  openModal('staffDeleteModal');
+}
+
+function confirmDeleteStaff() {
+  const id = document.getElementById('staffDeleteId').value;
+  const btn = document.querySelector('#staffDeleteModal .pk-btn-danger');
+  btn.disabled = true; btn.textContent = 'Deleting...';
+  fetch('/api/staff/' + id, { method: 'DELETE' })
+    .then(r => r.ok ? r.json() : r.json().then(d => { throw new Error(d.error || 'Delete failed'); }))
+    .then(d => {
+      if (d.ok) { closeModal('staffDeleteModal'); window.location.reload(); }
+      else throw new Error('Unexpected response');
+    })
+    .catch(err => {
+      alert('Error: ' + err.message);
+      btn.disabled = false; btn.textContent = 'Delete';
+    });
+}
+</script>
+{% endblock %}

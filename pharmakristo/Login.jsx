@@ -68,6 +68,9 @@ function Login() {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+        <p className="text-xs text-slate-400 mt-4 text-center">
+          Demo: admin / 12345 or cashier1 / 12345
+        </p>
       </div>
     </div>
   );

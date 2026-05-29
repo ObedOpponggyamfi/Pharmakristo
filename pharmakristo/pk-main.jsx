@@ -22,8 +22,13 @@ function PlaceholderPage({ title, sub }) {
 }
 
 function App() {
+  const { user, logout } = useAppContext();
   const [page, setPage]     = useState("dashboard");
   const [search, setSearch] = useState("");
+
+  if (!user) {
+    return <Login />;
+  }
 
   const renderPage = () => {
     switch (page) {
@@ -45,7 +50,7 @@ function App() {
 
   return (
     <div className="pk-app">
-      <Sidebar page={page} onNav={setPage}/>
+      <Sidebar page={page} onNav={setPage} onLogout={() => logout()}/>
       <div className="pk-main">
         <Header searchQuery={search} onSearch={setSearch}/>
         {renderPage()}
@@ -60,4 +65,8 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <AppContextProvider>
+    <App />
+  </AppContextProvider>
+);
