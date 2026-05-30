@@ -48,14 +48,14 @@ function Icon({ name, size = 18, className = "", style = {} }) {
 }
 
 // ─── Logo SVG (pharmacy cross) ─────────────────────────────────────────
-function PharmaLogo({ size = 36 }) {
+function PharmaLogo({ size = 40 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 36 36" fill="none">
-      <rect width="36" height="36" rx="9" fill="#16a34a"/>
-      {/* Pharmacy cross */}
-      <rect x="15" y="8" width="6" height="20" rx="2" fill="white"/>
-      <rect x="8" y="15" width="20" height="6" rx="2" fill="white"/>
-    </svg>
+    <div className="pk-sidebar-logo" style={{ width: size, height: size }}>
+      <svg width={Math.round(size * 0.5)} height={Math.round(size * 0.5)} viewBox="0 0 40 40" fill="none" aria-hidden="true">
+        <rect x="17" y="8" width="6" height="24" rx="2" fill="white"/>
+        <rect x="8" y="17" width="24" height="6" rx="2" fill="white"/>
+      </svg>
+    </div>
   );
 }
 

@@ -7,145 +7,44 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
-  <style>
-    body {
-      background: var(--pk-gray-50);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .pk-login-wrap {
-      width: 100%;
-      max-width: 420px;
-    }
-    .pk-login-brand {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 26px;
-    }
-    .pk-login-logo-name {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--pk-gray-900);
-      letter-spacing: -.01em;
-    }
-    .pk-login-card {
-      background: #fff;
-      border: 1px solid var(--pk-gray-200);
-      border-radius: var(--radius-lg);
-      box-shadow: 0 4px 24px rgba(0,0,0,.06);
-      padding: 32px 30px 28px;
-    }
-    .pk-login-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--pk-gray-900);
-      margin-bottom: 4px;
-      text-align: center;
-    }
-    .pk-login-sub {
-      font-size: 13.5px;
-      color: var(--pk-gray-500);
-      text-align: center;
-      margin-bottom: 22px;
-    }
-    .pk-login-field {
-      margin-bottom: 14px;
-    }
-    .pk-login-label {
-      display: block;
-      font-size: 12.5px;
-      font-weight: 600;
-      color: var(--pk-gray-600);
-      margin-bottom: 6px;
-    }
-    .pk-login-btn {
-      width: 100%;
-      padding: 11px 18px;
-      background: var(--pk-green);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      font: 700 14px 'Inter', sans-serif;
-      cursor: pointer;
-      transition: background .12s;
-      margin-top: 6px;
-    }
-    .pk-login-btn:hover { background: var(--pk-green-dark); }
-    .pk-login-error {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      margin-bottom: 16px;
-    }
-    .pk-login-hint {
-      margin-top: 18px;
-      text-align: center;
-      font-size: 12.5px;
-      color: var(--pk-gray-500);
-      padding-top: 16px;
-      border-top: 1px solid var(--pk-gray-100);
-    }
-    .pk-login-hint code {
-      background: var(--pk-gray-100);
-      padding: 1px 6px;
-      border-radius: 4px;
-      font-size: 12px;
-      color: var(--pk-gray-700);
-    }
-  </style>
 </head>
-<body>
-  <div class="pk-login-wrap">
-    <div class="pk-login-brand">
-      <svg width="56" height="56" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-        <rect width="40" height="40" rx="9" fill="#16a34a"/>
+<body class="pk-auth-page">
+  <div class="pk-auth-card">
+    <div class="pk-auth-logo" aria-hidden="true">
+      <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
         <rect x="17" y="8" width="6" height="24" rx="2" fill="white"/>
         <rect x="8" y="17" width="24" height="6" rx="2" fill="white"/>
       </svg>
-      <div class="pk-login-logo-name">PharmaKristo</div>
     </div>
+    <h1 class="pk-auth-title">PharmaKristo</h1>
+    <p class="pk-auth-sub">Sign in to manage your pharmacy</p>
 
-    <div class="pk-login-card">
-      <h1 class="pk-login-title">Sign in to PharmaKristo</h1>
-      <p class="pk-login-sub">Enter your credentials to access the dashboard</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        {% if category == 'error' %}
+          <div class="pk-auth-error" role="alert">{{ msg }}</div>
+        {% endif %}
+      {% endfor %}
+    {% endwith %}
 
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, msg in messages %}
-          {% if category == 'error' %}
-            <div class="pk-login-error" role="alert">{{ msg }}</div>
-          {% endif %}
-        {% endfor %}
-      {% endwith %}
-
-      <form method="post" action="{{ url_for('login') }}" novalidate>
-        <div class="pk-login-field">
-          <label class="pk-login-label" for="email">Email</label>
-          <input id="email" name="email" type="email" required autofocus
-                 autocomplete="email"
-                 class="pk-input" value="{{ email or '' }}"
-                 placeholder="admin@pharmakristo.com"/>
-        </div>
-        <div class="pk-login-field">
-          <label class="pk-login-label" for="password">Password</label>
-          <input id="password" name="password" type="password" required
-                 autocomplete="current-password"
-                 class="pk-input" placeholder="••••••••"/>
-        </div>
-        <button type="submit" class="pk-login-btn">Sign in</button>
-      </form>
-
-      <div class="pk-login-hint">
-        Demo: <code>admin@pharmakristo.com</code> / <code>password123</code>
+    <form method="post" action="{{ url_for('login') }}" novalidate>
+      <div class="pk-auth-field">
+        <label class="pk-auth-label" for="email">Email or username</label>
+        <input id="email" name="email" type="text" required autofocus
+               autocomplete="username"
+               class="pk-auth-input" value="{{ email or '' }}"
+               placeholder="admin"/>
       </div>
-    </div>
+      <div class="pk-auth-field">
+        <label class="pk-auth-label" for="password">Password</label>
+        <input id="password" name="password" type="password" required
+               autocomplete="current-password"
+               class="pk-auth-input" placeholder="Your password"/>
+      </div>
+      <button type="submit" class="pk-auth-btn">Sign In</button>
+    </form>
+
+    <p class="pk-auth-hint">Demo: admin / 12345 · cashier1 / 12345</p>
   </div>
 </body>
 </html>
