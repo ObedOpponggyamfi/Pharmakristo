@@ -18,8 +18,9 @@ from data import PHARMACY, STAFF
 import db
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
 
-app = Flask(__name__, static_folder=BASE_DIR)
+app = Flask(__name__, static_folder=STATIC_DIR)
 app.secret_key = "pharmakristo-secret-2026"
 
 SPA_ASSETS = {
