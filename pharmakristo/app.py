@@ -35,6 +35,9 @@ SPA_ASSETS = {
     "pk-sales.jsx",
     "pk-expenses.jsx",
     "pk-reports.jsx",
+    "pk-receipts.jsx",
+    "pk-settings.jsx",
+    "pk-premium.jsx",
     "pk-main.jsx",
 }
 
@@ -600,7 +603,85 @@ def api_dashboard_sales_trend():
 @login_required
 def api_recent_sales():
     limit = request.args.get("limit", 5, type=int)
-    return jsonify(db.get_recent_sales(max(1, min(limit, 20))))
+    return jsonify(db.get_recent_sales(max(1, min(limit, 50))))
+
+
+@app.route("/api/expenses", methods=["GET"])
+@login_required
+def api_expenses_list():
+    cat = request.args.get("category")
+    q = request.args.get("q")
+    return jsonify(db.get_expenses(category=cat, q=q))
+
+
+@app.route("/api/expenses", methods=["POST"])
+@login_required
+def api_expenses_add():
+    data = request.get_json(silent=True) or {}
+    description = (data.get("description") or "").strip()
+    category = (data.get("category") or "Other").strip()
+    amount = float(data.get("amount") or 0)
+    if not description or amount <= 0:
+        return jsonify({"error": "Description and positive amount required"}), 400
+    db.add_expense(description, category, amount)
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/expenses/<int:eid>", methods=["DELETE"])
+@login_required
+def api_expenses_delete(eid):
+    db.delete_expense(eid)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/notifications")
+@login_required
+def api_notifications():
+    alerts = db.get_alert_counts()
+    low = db.get_low_stock(5)
+    items = [
+        {"type": "low_stock", "text": f"{p['name']} — {p['qty']} left", "id": p["id"]}
+        for p in low
+    ]
+    return jsonify({**alerts, "items": items})
+
+
+@app.route("/api/global-search")
+@login_required
+def api_global_search():
+    q = (request.args.get("q") or "").strip()
+    if not q:
+        return jsonify({"products": [], "query": q})
+    products = db.get_products(q=q.lower())
+    return jsonify({"products": products[:12], "query": q})
+
+
+@app.route("/api/auth/me")
+def api_auth_me():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"authenticated": False}), 401
+    user = db.get_user(uid)
+    if not user:
+        return jsonify({"authenticated": False}), 401
+    return jsonify({
+        "authenticated": True,
+        "username": user["email"],
+        "role": user["role"],
+        "pharmacy": PHARMACY.get("name", "PharmaKristo"),
+    })
+
+
+@app.route("/favicon.ico")
+def favicon():
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+        '<rect width="32" height="32" rx="8" fill="#0c1e36"/>'
+        '<rect x="14" y="7" width="4" height="18" rx="1.5" fill="#f5b014"/>'
+        '<rect x="7" y="14" width="18" height="4" rx="1.5" fill="#f5b014"/>'
+        "</svg>"
+    )
+    return svg, 200, {"Content-Type": "image/svg+xml"}
 
 
 @app.route("/AppContext.jsx")

@@ -6,8 +6,8 @@
   <title>PharmaKristo — Pharmacy Management System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+  <link rel="icon" href="/favicon.ico" type="image/svg+xml"/>
   <link rel="stylesheet" href="pk-style.css"/>
-  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
   <div id="root"></div>
@@ -16,19 +16,19 @@
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 
-  <!-- Data -->
   <script src="pk-data.js"></script>
 
   <script type="text/babel" src="AppContext.jsx"></script>
   <script type="text/babel" src="Login.jsx"></script>
-
-  <!-- Components (order matters — shared first) -->
   <script type="text/babel" src="pk-shared.jsx"></script>
+  <script type="text/babel" src="pk-premium.jsx"></script>
   <script type="text/babel" src="pk-dashboard.jsx"></script>
   <script type="text/babel" src="pk-products.jsx"></script>
   <script type="text/babel" src="pk-sales.jsx"></script>
   <script type="text/babel" src="pk-expenses.jsx"></script>
   <script type="text/babel" src="pk-reports.jsx"></script>
+  <script type="text/babel" src="pk-receipts.jsx"></script>
+  <script type="text/babel" src="pk-settings.jsx"></script>
   <script type="text/babel" src="pk-main.jsx"></script>
 </body>
 </html>

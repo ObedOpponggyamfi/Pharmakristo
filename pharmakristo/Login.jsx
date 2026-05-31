@@ -1,5 +1,5 @@
 function Login() {
-  const { setUser, setUserRole } = useAppContext();
+  const { setUser, setUserRole, showToast } = useAppContext();
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -21,6 +21,7 @@ function Login() {
       }
       setUser(data.username);
       setUserRole(data.role);
+      showToast(`Welcome back, ${data.username}`);
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {

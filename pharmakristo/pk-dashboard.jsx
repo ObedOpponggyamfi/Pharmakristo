@@ -6,6 +6,7 @@ function Dashboard({ onNav }) {
   const [summary, setSummary] = React.useState(null);
   const [sales, setSales] = React.useState(fallback.sales);
   const [lowStock, setLowStock] = React.useState(fallback.lowStock);
+  const [trend, setTrend] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
@@ -17,26 +18,29 @@ function Dashboard({ onNav }) {
       setLoading(true);
       setError("");
       try {
-        const [summaryRes, salesRes, lowRes] = await Promise.all([
+        const [summaryRes, salesRes, lowRes, trendRes] = await Promise.all([
           fetch(`/api/dashboard/summary?range=${range}`),
           fetch("/api/sales/recent?limit=4"),
           fetch("/api/products?filter=low"),
+          fetch(`/api/dashboard/sales-trend?range=${range}`),
         ]);
 
         if (!summaryRes.ok || !salesRes.ok || !lowRes.ok) {
           throw new Error("Failed to load dashboard data");
         }
 
-        const [summaryData, salesData, lowData] = await Promise.all([
+        const [summaryData, salesData, lowData, trendData] = await Promise.all([
           summaryRes.json(),
           salesRes.json(),
           lowRes.json(),
+          trendRes.ok ? trendRes.json() : [],
         ]);
 
         if (cancelled) return;
 
         setSummary(summaryData);
         setSales(salesData);
+        setTrend(trendData);
         setLowStock(
           lowData.slice(0, 6).map((p) => ({
             name: p.name,
@@ -152,6 +156,13 @@ function Dashboard({ onNav }) {
           meta="Requires attention"
           icon="alert-triangle"
         />
+      </div>
+
+      <div className="pk-panel pk-animate-in" style={{ marginBottom: 20 }}>
+        <div className="pk-panel-title" style={{ marginBottom: 12 }}>
+          <Icon name="trending-up" size={18} /> Sales Trend
+        </div>
+        <TrendChart points={trend} height={140} />
       </div>
 
       <div className="pk-two-col">

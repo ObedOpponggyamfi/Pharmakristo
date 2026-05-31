@@ -563,6 +563,23 @@ def get_expenses(category=None, q=None):
     return [dict(r) for r in rows]
 
 
+def delete_expense(expense_id):
+    """Delete an expense by id."""
+    with get_db() as conn:
+        conn.execute("DELETE FROM expenses WHERE id=?", (expense_id,))
+
+
+def get_alert_counts():
+    """Counts for notification badge."""
+    stats = get_stats()
+    return {
+        "low_stock": stats["low_stock"],
+        "expiring_soon": stats["expiring_soon"],
+        "expired": stats["expired"],
+        "total": stats["low_stock"] + stats["expiring_soon"] + stats["expired"],
+    }
+
+
 # ─── Low-stock helper ─────────────────────────────────────────────────────────
 
 def get_low_stock(n=6):

@@ -1,9 +1,10 @@
 // pk-reports.jsx — PharmaKristo Reports page
 
 function Reports() {
-  const { dateRange, setDateRange } = useAppContext();
+  const { dateRange, setDateRange, showToast } = useAppContext();
   const fallback = window.PKData;
   const [stats, setStats] = React.useState(fallback.stats);
+  const [trend, setTrend] = React.useState([]);
   const [period, setPeriod]   = React.useState("This Month");
   const [compTab, setCompTab] = React.useState("monthly");
 
@@ -11,9 +12,11 @@ function Reports() {
     let cancelled = false;
     const range = mapDateRangeToApi(dateRange);
 
-    fetch(`/api/dashboard/summary?range=${range}`)
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => {
+    Promise.all([
+      fetch(`/api/dashboard/summary?range=${range}`).then((r) => (r.ok ? r.json() : Promise.reject())),
+      fetch(`/api/dashboard/sales-trend?range=${range}`).then((r) => (r.ok ? r.json() : [])),
+    ])
+      .then(([data, trendData]) => {
         if (cancelled) return;
         setStats({
           ...fallback.stats,
@@ -26,15 +29,27 @@ function Reports() {
           expiringSoon: data.expiring_soon,
           stockAlerts: data.stock_alerts,
         });
+        setTrend(trendData);
       })
       .catch(() => {
         if (!cancelled) setStats(fallback.stats);
       });
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [dateRange]);
+
+  const handleExport = () => {
+    exportCsv("pharmakristo-report.csv", [
+      ["Metric", "Value"],
+      ["Revenue", stats.monthlyRevenue],
+      ["Transactions", stats.monthlyTxns],
+      ["Expenses", stats.monthExpenses],
+      ["Net Profit", stats.netProfit],
+      ["Low Stock", stats.lowStock],
+      ...trend.map((p) => ["Sale " + p.date, p.total]),
+    ]);
+    showToast("Report exported");
+  };
 
   const fmt = (n) => n.toLocaleString("en-GH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -59,7 +74,7 @@ function Reports() {
             <option value="30days">Last 30 days</option>
             <option value="all">All time</option>
           </select>
-          <button className="pk-btn pk-btn-outline">
+          <button type="button" className="pk-btn pk-btn-outline" onClick={handleExport}>
             <Icon name="download" size={15}/> Export
           </button>
         </div>
@@ -76,6 +91,11 @@ function Reports() {
         <div className="pk-alert-chip expiry">
           <Icon name="calendar" size={14}/> {stats.expiringSoon} products expiring soon
         </div>
+      </div>
+
+      <div className="pk-panel pk-animate-in" style={{ marginBottom: 24 }}>
+        <div className="pk-panel-title" style={{ marginBottom: 12 }}>Sales Trend</div>
+        <TrendChart points={trend} height={180} />
       </div>
 
       {/* Financial summary */}
@@ -143,7 +163,7 @@ function Reports() {
 
       {/* Big colored summary cards (bottom) */}
       <div className="pk-cards-grid">
-        <StatCard color="green"  label="Daily Sales"    value="0"              meta="₵0.00 revenue"                   icon="shopping-cart"/>
+        <StatCard color="green"  label="Period Sales" value={stats.monthlyTxns} meta={`₵${fmt(stats.monthlyRevenue)} revenue`} icon="shopping-cart"/>
         <StatCard color="blue"   label="Monthly Sales"  value={stats.monthlyTxns} meta={`₵${fmt(stats.monthlyRevenue)} revenue`} icon="shopping-cart"/>
         <StatCard color="white"  label="Gross Profit"   value={`₵${fmt(stats.grossProfit)}`} meta="This month"       icon="activity"/>
         <StatCard color="orange" label="Net Profit"     value={`₵${fmt(stats.netProfit)}`}   meta={`After ₵${fmt(stats.monthExpenses)} expenses`} icon="dollar-sign"/>

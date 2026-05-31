@@ -37,6 +37,8 @@ function Icon({ name, size = 18, className = "", style = {} }) {
     "activity":     <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>,
     "dollar":       <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
     "columns":      <><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></>,
+    "moon":         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>,
+    "sun":          <><circle cx="12" cy="12" r="4"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -71,12 +73,12 @@ function Sidebar({ page, onNav, onLogout }) {
     { id:"receipts",     label:"Receipts",    icon:"receipt" },
     { id:"reports",      label:"Reports",     icon:"bar-chart" },
   ];
-  const mgmt = userRole === "admin"
-    ? [
-        { id:"staff",        label:"Staff",       icon:"users" },
-        { id:"settings",     label:"Settings",    icon:"settings" },
-      ]
-    : [];
+  const mgmt = [
+    ...(userRole === "admin"
+      ? [{ id:"staff", label:"Staff", icon:"users" }]
+      : []),
+    { id:"settings", label:"Settings", icon:"settings" },
+  ];
   return (
     <aside className="pk-sidebar">
       <div className="pk-sidebar-brand">
@@ -115,31 +117,120 @@ function Sidebar({ page, onNav, onLogout }) {
 }
 
 // ─── Header ────────────────────────────────────────────────────────────
-function Header({ searchQuery, onSearch }) {
-  const D = window.PKData;
+function Header({ searchQuery, onSearch, onNav, onSearchSubmit }) {
+  const { user, userRole, theme, setTheme, pharmacyName } = useAppContext();
+  const [notifOpen, setNotifOpen] = React.useState(false);
+  const [alerts, setAlerts] = React.useState({ total: 0, items: [] });
+  const [searchHits, setSearchHits] = React.useState([]);
+  const notifRef = React.useRef(null);
+
+  React.useEffect(() => {
+    fetch("/api/notifications")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setAlerts(d))
+      .catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
+    if (!searchQuery || searchQuery.length < 2) {
+      setSearchHits([]);
+      return undefined;
+    }
+    const t = window.setTimeout(() => {
+      fetch("/api/global-search?q=" + encodeURIComponent(searchQuery))
+        .then((r) => (r.ok ? r.json() : { products: [] }))
+        .then((d) => setSearchHits(d.products || []))
+        .catch(() => setSearchHits([]));
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [searchQuery]);
+
+  React.useEffect(() => {
+    if (!notifOpen) return undefined;
+    const close = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [notifOpen]);
+
+  const pickProduct = (name) => {
+    onSearch?.(name);
+    setSearchHits([]);
+    onNav?.("products");
+  };
+
   return (
     <header className="pk-header">
-      <button className="pk-header-collapse"><Icon name="layout" size={20}/></button>
+      <button className="pk-header-collapse" type="button"><Icon name="layout" size={20}/></button>
       <div className="pk-pharmacy-chip">
         <span className="pk-pharmacy-dot"/>
-        {D.pharmacy.name}
+        {pharmacyName}
       </div>
       <div className="pk-branch-selector">
         <Icon name="map-pin" size={14}/>
-        {D.pharmacy.branch}
+        All Branches
         <Icon name="chevron-down" size={14}/>
       </div>
-      <div className="pk-search">
-        <Icon name="search" size={15} style={{ color:"#9ca3af", flexShrink:0 }}/>
-        <input value={searchQuery} onChange={e => onSearch?.(e.target.value)} placeholder="Search anything..."/>
-        <span className="pk-kbd">⌘ K</span>
+      <div className="pk-search-wrap">
+        <div className="pk-search">
+          <Icon name="search" size={15} style={{ color:"#9ca3af", flexShrink:0 }}/>
+          <input
+            value={searchQuery}
+            onChange={(e) => onSearch?.(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSearchSubmit?.(searchQuery);
+                if (searchQuery) onNav?.("products");
+              }
+              if (e.key === "Escape") setSearchHits([]);
+            }}
+            placeholder="Search products… (Ctrl+K)"
+          />
+          <span className="pk-kbd">⌘K</span>
+        </div>
+        {searchHits.length > 0 && (
+          <div className="pk-search-dropdown">
+            {searchHits.map((p) => (
+              <button key={p.id} type="button" className="pk-search-hit" onClick={() => pickProduct(p.name)}>
+                <Icon name="package" size={14}/>
+                <span>{p.name}</span>
+                <span className="pk-search-hit-meta">{p.qty} in stock</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="pk-header-right">
-        <button className="pk-bell">
-          <Icon name="bell" size={20}/>
-          <span className="pk-bell-badge">87</span>
+        <button
+          type="button"
+          className="pk-theme-toggle"
+          title="Toggle theme"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          <Icon name={theme === "dark" ? "sun" : "moon"} size={18}/>
         </button>
-        <div className="pk-avatar">A</div>
+        <div className="pk-notif-wrap" ref={notifRef}>
+          <button type="button" className="pk-bell" onClick={() => setNotifOpen((v) => !v)}>
+            <Icon name="bell" size={20}/>
+            {alerts.total > 0 && <span className="pk-bell-badge">{alerts.total}</span>}
+          </button>
+          {notifOpen && (
+            <div className="pk-notif-panel">
+              <div className="pk-notif-title">Alerts</div>
+              {alerts.items?.length ? alerts.items.map((item, i) => (
+                <button key={i} type="button" className="pk-notif-item" onClick={() => onNav?.("products")}>
+                  <Icon name="alert-triangle" size={14}/>
+                  {item.text}
+                </button>
+              )) : (
+                <div className="pk-notif-empty">All clear — no urgent alerts</div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="pk-avatar" title={userRole || ""}>{(user || "?")[0].toUpperCase()}</div>
       </div>
     </header>
   );
